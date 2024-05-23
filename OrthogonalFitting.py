@@ -51,7 +51,7 @@ def logposterior(theta, y, x, err_y, err_x):
 
 #reading data from a test file
 df = pd.read_csv('data.csv') 
-y, err_y, x, err_x= df.logMstar, df.logMstar_err, df.logV, df.logV_err
+y, err_y, x, err_x= df.logMstar.to_numpy(), df.logMstar_err.to_numpy(), df.logV.to_numpy(), df.logV_err.to_numpy()
 
 #initializing paramters for the sampler
 Nens = 300 # number of ensemble points
@@ -69,7 +69,7 @@ for i in range(Nens):
         ]
     p0.append(pi)
 
-if not os.path.isfile(os.getcwd()+'OrthogonalFitting.pkl'):
+if not os.path.isfile('OrthogonalFitting.pkl'):
     sampler = emcee.EnsembleSampler(Nens, ndims, logposterior, args=argslist)
 
     t0 = time.time()
@@ -99,6 +99,7 @@ figure = corner.corner(
     title_fmt = '.3f',
     levels=(0.68,0.90,0.99), 
     labels=[r"$\alpha$", r"$\beta$", r"$\zeta_{{int}}$"], 
+    range = [(1.5,4.6),(0,6),(0,0.2)], #to be changed according to results
     show_titles=True, 
     label_kwargs={"fontsize": 16},
     title_kwargs={"fontsize": 14},
@@ -117,11 +118,11 @@ for yi in range(ndims):
         ax.axhline(Med_value[yi], color=axis_color)
         ax.scatter(Med_value[xi], Med_value[yi], color=axis_color)
 
-plt.legend(
-    handles=[mlines.Line2D([], [], color='white',label="STFR")],
-    fontsize=16, frameon=False,
-    bbox_to_anchor=(1, ndims), loc="upper right"
-)
+# plt.legend(
+#     handles=[mlines.Line2D([], [], color='white',label="STFR")],
+#     fontsize=16, frameon=False,
+#     bbox_to_anchor=(1, ndims), loc="upper right"
+# )
 figure.savefig('corner.png',dpi=300)
 
 labels=['slope = ','intercept = ','intrinsic scatter = ',]
@@ -151,26 +152,28 @@ print('orthogonal scatter:',round(scat_ort,4))
 #making a best fit plot
 fig= plt.figure( figsize=(8.0,5.5), dpi=100) 
 gs = gridspec.GridSpec(4, 4, figure=fig)
+ax0 = fig.add_subplot(gs[0:, :4])
+plt.ylim(8.0, 12.0)
+plt.xlim(1.3, 3.0)
 
 #plotting data points
-plt.errorbar(x,y, xerr =err_x , yerr=err_y, fmt='o', ms=9, color='black', mfc='royalblue', mew=1, ecolor='gray', alpha=1, capsize=2.0, zorder=1, label='GS23');
+plt.errorbar(x,y, xerr =err_x , yerr=err_y, fmt='o', ms=9, color='black', mfc='royalblue', mew=1, ecolor='gray', alpha=1, capsize=2.0, zorder=1, label='data points');
 
-#plotting best fit line and 3sigma intrinsic scatter
-plt.plot(x_line,y_line, '-', color='darkorange', linewidth=4,zorder=4, label='This work')
-plt.plot(x_line,y_line+3*scat, '--', color='orange', linewidth=4,zorder=4, label='3$\sigma$ scatter')
-plt.plot(x_line,y_line-3*scat, '--', color='orange', linewidth=4,zorder=4, )
 
 #stylistic changes
 plt.ylabel(r'$log(M_{star} \ [\mathrm{M_\odot}])$', fontsize = 16)
 plt.xlabel(r'$log(V_c \ [{\rm km/s}])$', fontsize = 16)
-ax0 = fig.add_subplot(gs[1:, :3])
-plt.ylim(8.0, 12.0)
-plt.xlim(1.3, 3.0)
 ax1=ax0.twinx()
 plt.ylim(8.0, 12.0)
 plt.xlim(1.3, 3.0)
+
+#plotting best fit line and 3sigma intrinsic scatter
+plt.plot(x_line,y_line, '-', color='darkorange', linewidth=4,zorder=4, label='Best-fit line')
+plt.plot(x_line,y_line+3*scat, '--', color='orange', linewidth=3,zorder=4, label=r'3$\sigma$ scatter')
+plt.plot(x_line,y_line-3*scat, '--', color='orange', linewidth=3,zorder=4, )
+plt.legend(loc='upper left',fontsize=11)
+
 ax1.get_yaxis().set_visible(False)
-ax1.legend(loc='upper left',fontsize=11)
 plt.tight_layout()
 plt.subplots_adjust(hspace=0, wspace=0)
 
